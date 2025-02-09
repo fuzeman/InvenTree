@@ -553,6 +553,12 @@ jobs:
     timeout-minutes: 60
     needs: ["pre-commit", "paths-filter"]
     if: needs.paths-filter.outputs.frontend == 'true' || needs.paths-filter.outputs.force == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+        shardIndex: [1, 2]
+        shardTotal: [2]
     env:
       INVENTREE_DB_ENGINE: sqlite3
       INVENTREE_DB_NAME: /home/runner/work/InvenTree/db.sqlite3
@@ -584,19 +590,51 @@ jobs:
       - name: Collect static
         run: invoke static
       - name: Install Playwright Browsers
-        run: cd src/frontend && npx playwright install --with-deps
+        run: cd src/frontend && npx playwright install ${{ matrix.browser }} --with-deps
       - name: Run Playwright tests
         id: tests
-        run: cd src/frontend && npx nyc playwright test
-      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # pin@v4.6.0
-        if: ${{ !cancelled() && steps.tests.outcome == 'failure' }}
-        with:
-          name: playwright-report
-          path: src/frontend/playwright-report/
-          retention-days: 14
+        run: cd src/frontend && npx nyc playwright test --project=${{ matrix.browser }} --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - name: Report coverage
         if: always()
-        run: cd src/frontend && npx nyc report --report-dir ./coverage --temp-dir .nyc_output --reporter=lcov --exclude-after-remap false
+        run: cd src/frontend && npx nyc report --report-dir ./coverage/${{ matrix.browser }}-${{ matrix.shardIndex }} --temp-dir .nyc_output --reporter=lcov --exclude-after-remap false
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ matrix.browser }}-${{ matrix.shardIndex }}
+          retention-days: 14
+
+          path: |
+            src/frontend/blob-report/
+            src/frontend/coverage/
+
+  platform_ui_reports:
+    name: Tests - Platform UI Reports
+    runs-on: ubuntu-20.04
+    if: ${{ !cancelled() }}
+    needs: [platform_ui]
+    env:
+      PLAYWRIGHT_HTML_OPEN: never
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        with:
+          persist-credentials: false
+      - name: Environment Setup
+        uses: ./.github/actions/setup
+        with:
+          npm: true
+          install: true
+      - name: Install dependencies
+        run: invoke int.frontend-compile
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          path: src/frontend/
+          pattern: playwright-*
+          merge-multiple: true
+      - name: Merge reports
+        run: cd src/frontend && npx playwright merge-reports --reporter html ./blob-report/ && npx playwright merge-reports --reporter github ./blob-report/
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # pin@v5.3.1
         if: always()
@@ -611,6 +649,17 @@ jobs:
           cd src/frontend
           yarn install
           yarn run build
+      - name: Upload reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          retention-days: 14
+
+          path: |
+            src/frontend/blob-report/
+            src/frontend/coverage/
+            src/frontend/playwright-report/
 
   platform_ui_build:
     name: Build - UI Platform
