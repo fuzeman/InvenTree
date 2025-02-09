@@ -221,10 +221,10 @@ if DEBUG and 'collectstatic' not in sys.argv:
     if web_dir.exists():
         STATICFILES_DIRS.append(web_dir)
 
-    # Append directory for sample plugin static content (if in debug mode)
-    if PLUGINS_ENABLED:
-        logger.info('Adding plugin sample static content')
-        STATICFILES_DIRS.append(BASE_DIR.joinpath('plugin', 'samples', 'static'))
+# Append directory for sample plugin static content (if in debug mode)
+if DEBUG and PLUGINS_ENABLED:
+    logger.info('Adding plugin sample static content')
+    STATICFILES_DIRS.append(BASE_DIR.joinpath('plugin', 'samples', 'static'))
 
 # Database backup options
 # Ref: https://django-dbbackup.readthedocs.io/en/master/configuration.html
