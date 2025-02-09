@@ -79,7 +79,7 @@ export const navigate = async (page, url: string) => {
     url = `${baseUrl}/${url}`;
   }
 
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await page.goto(url, { waitUntil: 'load' });
 };
 
 /**
