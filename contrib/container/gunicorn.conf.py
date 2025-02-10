@@ -4,6 +4,20 @@ import logging
 import multiprocessing
 import os
 
+
+def get_int(name, default_value=None):
+    """Parse integer from environment variable or return default."""
+    value = os.environ.get(name, None)
+
+    if value is None:
+        return default_value
+
+    try:
+        return int(value)
+    except ValueError:
+        return default_value
+
+
 # Logger configuration
 logger = logging.getLogger('inventree')
 accesslog = '-'
@@ -17,26 +31,17 @@ capture_output = True
 worker_tmp_dir = '/dev/shm'  # Write temp file to RAM (faster)
 threads = 4
 
-
 # Worker timeout (default = 90 seconds)
-timeout = os.environ.get('INVENTREE_GUNICORN_TIMEOUT', '90')
+timeout = get_int('INVENTREE_GUNICORN_TIMEOUT', 90)
 
 # Number of worker processes
-workers = os.environ.get('INVENTREE_GUNICORN_WORKERS', None)
-
-if workers is not None:
-    try:
-        workers = int(workers)
-    except ValueError:
-        workers = None
-
-if workers is None:
-    workers = multiprocessing.cpu_count() * 2 + 1
+workers = get_int('INVENTREE_GUNICORN_WORKERS', multiprocessing.cpu_count() * 2 + 1)
 
 logger.info('Starting gunicorn server with %s workers', workers)
 
-max_requests = 1000
-max_requests_jitter = 50
+# Maximum Requests
+max_requests = get_int('INVENTREE_GUNICORN_MAX_REQUESTS', 1000)
+max_requests_jitter = get_int('INVENTREE_GUNICORN_MAX_REQUESTS_JITTER', 50)
 
 # preload app so that the ready functions are only executed once
 preload_app = True
