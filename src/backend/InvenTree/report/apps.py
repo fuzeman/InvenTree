@@ -42,6 +42,8 @@ class ReportConfig(AppConfig):
             return  # pragma: no cover
 
         with maintenance_mode_on():
+            logger.info('Creating default report templates...')
+
             try:
                 self.create_default_labels()
                 self.create_default_reports()
