@@ -39,6 +39,7 @@ export default defineConfig({
           command: 'invoke dev.gunicorn -a 127.0.0.1:8100',
           env: {
             INVENTREE_DEBUG: 'True',
+            INVENTREE_LOG_LEVEL: 'DEBUG',
             INVENTREE_PLUGINS_ENABLED: 'True',
             INVENTREE_ADMIN_URL: 'test-admin',
             INVENTREE_SITE_URL: 'http://localhost:8000',
@@ -80,6 +81,7 @@ export default defineConfig({
           command: 'invoke dev.server -a 127.0.0.1:8000',
           env: {
             INVENTREE_DEBUG: 'True',
+            INVENTREE_LOG_LEVEL: 'DEBUG',
             INVENTREE_PLUGINS_ENABLED: 'True',
             INVENTREE_ADMIN_URL: 'test-admin',
             INVENTREE_SITE_URL: 'http://localhost:8000',

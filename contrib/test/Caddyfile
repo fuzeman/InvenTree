@@ -15,7 +15,7 @@
 (log_common) {
 	log {
 		output stderr
-		level info
+		level warn
 	}
 }
 
